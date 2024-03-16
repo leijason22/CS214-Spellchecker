@@ -25,6 +25,8 @@ this is stored in the dictinoary malloced array - char** dictinoary
 dictionary data structure, creation of dictionary, reading in and populating, and searching for a 
 target
 
+
+ /usr/share/dict/words 
 */
 
 static char **dictionary_array;
