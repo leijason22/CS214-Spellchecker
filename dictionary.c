@@ -24,8 +24,6 @@ this is stored in the dictinoary malloced array - char** dictinoary
 
 dictionary data structure, creation of dictionary, reading in and populating, and searching for a 
 target
-
-
  /usr/share/dict/words 
 */
 
@@ -66,12 +64,6 @@ int find_length(int fd) {
             pos++;
         }
 
-        // Print buffer content for debugging
-        printf("Buffer content: %s\n", buf);
-
-        // Print number of lines detected
-        printf("Number of lines detected: %d\n", line_count);
-
         // no partial line
         if (line_start == pos) {
             pos = 0;
@@ -98,60 +90,133 @@ int find_length(int fd) {
         buf[pos] = '\0';
         line_count++; //increment line count
     }
+    
     free(buf);
     return line_count;
 }
 
-char **read_dictionary(int fd, int *word_count) {
-    // int fd = open(path, O_RDONLY);
-    // if (fd < 0) {
-    //     fprintf(stderr, "Error: Can't open dictionary\n");
-    //     return NULL;
-    // }
+// void make_dict(int fd, int total_lines){
+//     dictionary_array = malloc(total_lines * sizeof(char*));
+//     int count = 0;
 
-    num_lines = find_length(fd);
+//     lseek(fd, 0, SEEK_SET); // Move the file pointer to the beginning
+//     int buflength = BUFLENGTH;
+//     char *buf = malloc(BUFLENGTH);
 
-    dictionary_array = (char **)malloc(num_lines * sizeof(char *));
+//     int pos = 0;
+//     int bytes;
+//     int line_start;
 
+//     while ((bytes = read(fd, buf + pos, buflength - pos)) > 0) {
+// 	    //if (DEBUG) printf("read %d bytes; pos=%d\n", bytes, pos);
+//         line_start = 0;
+//         int bufend = pos + bytes;
+
+//         while (pos < bufend) {
+//             // if (DEBUG) printf("start %d, pos %d, char '%c'\n", line_start, pos, buf[pos]);
+//             if (buf[pos] == '\n') {
+//             // we found a line, starting at line_start ending before pos
+//                 buf[pos] = '\0';
+//                 line_start = pos + 1;
+//             }
+//             pos++;
+//         }
+
+//         strcpy(dictionary_array[0], buf);
+//         count++;
+
+//         // no partial line
+//         if (line_start == pos) {
+//             pos = 0;
+//             // partial line
+//             // move segment to start of buffer and refill remaining buffer
+//         } else if (line_start > 0) {
+//             int segment_length = pos - line_start;
+//             memmove(buf, buf + line_start, segment_length);
+//             pos = segment_length;
+//             // if (DEBUG) printf("move %d bytes to buffer start\n", segment_length);
+//         // partial line filling entire buffer
+//         } else if (bufend == buflength) {
+//             buflength *= 2;
+//             buf = realloc(buf, buflength);
+//             // if (DEBUG) printf("increase buffer to %d bytes\n", buflength);
+//         }
+//     }
+    
+//     // partial line in buffer after EOF
+//     if (pos > 0) {
+//         if (pos == buflength) {
+//             buf = realloc(buf, buflength + 1);
+//         }
+//         buf[pos] = '\0';
+//     }
+//     free(buf);
+// }
+
+void make_dict(int fd, int total_lines) {
+    // Allocate memory for dictionary_array
+    dictionary_array = malloc(total_lines * sizeof(char*));
     if (dictionary_array == NULL) {
-        fprintf(stderr, "Memory allocation failed\n");
-        close(fd);
-        return NULL;
+        perror("malloc failed");
+        exit;
     }
 
-    //resets the file pointer to the beginning of the file
+    // Initialize variables
+    int count = 0;
+    int buflength = BUFLENGTH;
+    char *buf = malloc(BUFLENGTH);
+    if (buf == NULL) {
+        perror("malloc failed");
+        exit(1);
+    }
+
+    // Reset file pointer to the beginning of the file
     lseek(fd, 0, SEEK_SET);
 
-    char buffer[MAX_WORD_LENGTH];
-    int count = 0;
-    ssize_t bytes_read;
+    int pos = 0;
+    int bytes;
+    int line_start;
 
-    while ((bytes_read = read(fd, buffer, MAX_WORD_LENGTH - 1)) > 0) {
-        buffer[bytes_read] = '\0'; // null-terminate the buffer
-        char *newline_pos = strchr(buffer, '\n'); //looks for first occurrence of \n
+    while ((bytes = read(fd, buf + pos, buflength - pos)) > 0) {
+        line_start = 0;
+        int bufend = pos + bytes;
 
-        if (newline_pos != NULL) {
-            *newline_pos = '\0'; // Remove the newline character
-        }
-
-        dictionary_array[count] = allocate_and_copy(buffer);
-
-        //check if malloc fails
-        if (dictionary_array[count] == NULL) {
-            fprintf(stderr, "Memory allocation for word failed\n");
-            close(fd);
-            for (int i = 0; i < count; i++) {
-                free(dictionary_array[i]);
+        // Process each character in the buffer
+        for (int i = 0; i < bufend; i++) {
+            if (buf[i] == '\n') {
+                // Found a newline, so we have a complete line
+                buf[i] = '\0'; // Null-terminate the line
+                dictionary_array[count] = strdup(buf + line_start); // Store the line
+                if (dictionary_array[count] == NULL) {
+                    perror("strdup failed");
+                    exit(1);
+                }
+                count++;
+                line_start = i + 1; // Update line_start to the next character
             }
-            free(dictionary_array);
-            return NULL;
         }
-        count++;
+
+        // If there is a partial line at the end of the buffer, move it to the beginning
+        if (line_start < bufend) {
+            int segment_length = bufend - line_start;
+            memmove(buf, buf + line_start, segment_length);
+            pos = segment_length;
+        } else {
+            pos = 0;
+        }
+
+        // If the buffer is full, double its size
+        if (bufend == buflength) {
+            buflength *= 2;
+            buf = realloc(buf, buflength);
+            if (buf == NULL) {
+                perror("realloc failed");
+                exit(1);
+            }
+        }
     }
 
-    close(fd);
-    *word_count = count;
-    return dictionary_array;
+    free(buf);
 }
 
 //binary search to check if a word is in the dictionary
@@ -173,4 +238,17 @@ int binary_search(int dictionary_size, char **dictionary, char *target) {
         }
     }
     return -1; //word not found
+}
+
+int main(int argc, char *argv[]){
+    int a = 0;
+    int f = open(argv[1], O_RDONLY);
+    int lines = find_length(f);
+
+    make_dict(f, lines);
+    for (int i = 0; dictionary_array[i] != NULL; i++) {
+        printf("%s\n", dictionary_array[i]);
+        a++; 
+    }
+    printf("%d \n", a);
 }
