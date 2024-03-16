@@ -158,7 +158,7 @@ void make_dict(int fd, int total_lines) {
     dictionary_array = malloc(total_lines * sizeof(char*));
     if (dictionary_array == NULL) {
         perror("malloc failed");
-        exit;
+        exit(EXIT_FAILURE);
     }
 
     // Initialize variables
@@ -215,7 +215,7 @@ void make_dict(int fd, int total_lines) {
             }
         }
     }
-
+    close(fd);
     free(buf);
 }
 
