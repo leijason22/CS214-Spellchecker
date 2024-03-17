@@ -235,32 +235,137 @@ int binary_search(int dictionary_size, char **dictionary, char *target) {
     return -1; //word not found
 }
 
-// void remove_trailing_punc(char *word) {
-//     int len = strlen(word);
-//     while (len > 0 && ispunct(word[len - 1])) {
-//         word[len - 1] = '\0';
-//         len--;
-//     }
-// }
+int isAllCaps(const char *word){
+    for (int i = 0; word[i] != '\0'; i++) {
+        if (!isupper(word[i])) {
+            return 0; //FALSE, character is not capitalized, cannot be all caps
+        }
+    }
+
+    return 1; //TRUE, if all characters are capitalized
+}
+
+int hasInitialCap(const char *word) {
+    if (isupper(word[0])) {
+    //assume initial capitalization first
+        //check rest of char, if any other char is uppercase, it's not initial capitalization
+        for (int i = 1; word[i] != '\0'; i++) {
+            if (isupper(word[i])) {
+                return 0;
+            }
+        }
+        return 1; //TRUE, only has initial capitalization
+    }
+    return 0; //if first char is not capitalized, not initial capitalization
+}
+
+int allLowerCase(const char *word) {
+    for (int i = 0; word[i] != '\0'; i++) {
+        if (!islower(word[i])) {
+            return 0; //FALSE, not all characters are lowercase
+        }
+    }
+    return 1; //TRUE, all characters are lowercase
+}
+
 
 int spelling(char word[], char **diction){
     //printf("spelling\n");
     //tolower(word[0]); // in case first letter is capitalized and library is all lowercaps
 
-    //case 1: exact match
+    //case 1: exact match 
     char *startOfWord = word; 
 
+    //if word is all caps, only way for it to be accepted is if in dict, the word is all lowercase, initi cap, or all caps
+    char original[MAX_WORD_LENGTH];
+
+    if (isAllCaps(word)) {
+        strcpy(original, word);
+
+        //check if there is lowercase version
+        for (int i = 0; word[i] != '\0'; i++) {
+            word[i] = tolower(word[i]);
+        }
+
+        for (int i = 0; diction[i] != NULL; i++) {
+            if ((strcmp(diction[i], word)) == 0){
+                return 0; //word with all caps is found
+            }
+        }
+
+        //reset back to original
+        strcpy(word, original);
+        
+        word[0] = toupper(word[0]);
+        for (int i = 1; word[i] != '\0'; i++) {
+            word[i] = tolower(word[i]);
+        }
+
+        for (int i = 0; diction[i] != NULL; i++) {
+            if ((strcmp(diction[i], word)) == 0){
+                return 0; //word with all caps is found
+            }
+        }
+    }
+
+    strcpy(original, word);
+
+    //if input has initial cap, only way for it to be accepted is if in dict, the word is all lowercase or init cap
+    if (hasInitialCap(word)) {
+        for (int i = 0; word[i] != '\0'; i++) {
+            word[i] = tolower(word[i]);
+        }
+
+        for (int i = 0; diction[i] != NULL; i++) {
+            if ((strcmp(diction[i], word)) == 0){
+                return 0; //word with all caps is found
+            }
+        }
+    }
+
+    //checks exact case (covers all caps and init cap)
     for (int i = 0; diction[i] != NULL; i++) {
         if ((strcmp(diction[i], word)) == 0){
             return 0;
         }
     }
 
-    //case 2: remove trailing punctuation WAIT traverse already ignores all punctuation
-    char original[MAX_WORD_LENGTH];
-    strcpy(original, word);
+    // char original[MAX_WORD_LENGTH];
+    // strcpy(original, word);
 
-    // remove_trailing_punc(word);
+    // //case 3: initial capital
+    // word[0] = toupper(word[0]);
+    // for (int i = 1; word[i] != '\0'; i++) {
+    //     word[i] = tolower(word[i]);
+    // }
+
+    // for (int i = 0; diction[i] != NULL; i++) {
+    //     if ((strcmp(diction[i], word)) == 0) {
+    //         return 0; // Word with initial capital found
+    //     }
+    // }
+
+    // //reset back to original
+    // strcpy(word, original);
+
+    // //case 4: all capitalized
+    // for (int i = 0; word[i] != '\0'; i++) {
+    //     word[i] = toupper(word[i]);
+    // }
+
+    // for (int i = 0; diction[i] != NULL; i++) {
+    //     if ((strcmp(diction[i], word)) == 0) {
+    //         return 0; // Uppercase word found
+    //     }
+    // }
+
+    // //reset back to original
+    // strcpy(word, original);
+
+    // //case 5: convert word to all lowercase and check again
+    // for (int i = 0; word[i] != '\0'; i++) {
+    //     word[i] = tolower(word[i]);
+    // }
 
 
     // for (int i = 0; diction[i] != NULL; i++) { //try again
@@ -269,63 +374,19 @@ int spelling(char word[], char **diction){
     //     }
     // }
 
-    //reset back to original
+    // //case 6: hyphenated words
+    // // char *hyphenated = strtok(word, "-"); // Split the hyphenated word into tokens
+    // // while (hyphenated) {
+    // //     // Check each component word against the dictionary
+    // //     if (spelling(hyphenated, diction) != 0) {
+    // //         // If any component word is misspelled, return 1
+    // //         return 0;
+    // //     }
+    // //     hyphenated = strtok(NULL, "-"); // Get the next token
+    // // }
+
+    // //if not found at all, return original form of the word
     // strcpy(word, original);
-
-    //case 3: initial capital
-    word[0] = toupper(word[0]);
-    for (int i = 1; word[i] != '\0'; i++) {
-        word[i] = tolower(word[i]);
-    }
-
-    for (int i = 0; diction[i] != NULL; i++) {
-        if ((strcmp(diction[i], word)) == 0) {
-            return 0; // Word with initial capital found
-        }
-    }
-
-    //reset back to original
-    strcpy(word, original);
-
-    //case 4: all capitalized
-    for (int i = 0; word[i] != '\0'; i++) {
-        word[i] = toupper(word[i]);
-    }
-
-    for (int i = 0; diction[i] != NULL; i++) {
-        if ((strcmp(diction[i], word)) == 0) {
-            return 0; // Uppercase word found
-        }
-    }
-
-    //reset back to original
-    strcpy(word, original);
-
-    //case 5: convert word to all lowercase and check again
-    for (int i = 0; word[i] != '\0'; i++) {
-        word[i] = tolower(word[i]);
-    }
-
-
-    for (int i = 0; diction[i] != NULL; i++) { //try again
-        if ((strcmp(diction[i], word)) == 0){
-            return 0;
-        }
-    }
-
-    //case 6: hyphenated words
-    // char *hyphenated = strtok(word, "-"); // Split the hyphenated word into tokens
-    // while (hyphenated) {
-    //     // Check each component word against the dictionary
-    //     if (spelling(hyphenated, diction) != 0) {
-    //         // If any component word is misspelled, return 1
-    //         return 0;
-    //     }
-    //     hyphenated = strtok(NULL, "-"); // Get the next token
-    // }
-
-    //if not found at all, return original form of the word
-    strcpy(word, original);
 
     return 1;
 }
