@@ -33,14 +33,6 @@ target
 char **dictionary_array;
 int num_lines;
 
-char *allocate_and_copy(const char *word) {
-    char *new_word = (char *)malloc(strlen(word) + 1);  // +1 for the null terminator
-    if (new_word != NULL) {
-        strcpy(new_word, word);
-    }
-    return new_word;
-}
-
 int find_length(int fd) {
     lseek(fd, 0, SEEK_SET); // Move the file pointer to the beginning
     int line_count = 0;
@@ -243,10 +235,19 @@ int binary_search(int dictionary_size, char **dictionary, char *target) {
     return -1; //word not found
 }
 
+void remove_trailing_punc(char *word) {
+    int len = strlen(word);
+    while (len > 0 && ispunct(word[len - 1])) {
+        word[len - 1] = '\0';
+        len--;
+    }
+}
+
 int spelling(char word[], char **diction){
     //printf("spelling\n");
     //tolower(word[0]); // in case first letter is capitalized and library is all lowercaps
 
+    //case 1: exact match
     char *startOfWord = word; 
 
     for (int i = 0; diction[i] != NULL; i++) {
@@ -255,18 +256,66 @@ int spelling(char word[], char **diction){
         }
     }
 
-    for (int i = 0; word[i] != '\0'; i++) {
-        word[i] = tolower(word[i]);
-    }
+    //case 2: remove trailing punctuation
+    char original[MAX_WORD_LENGTH];
+    strcpy(original, word);
 
-    // Reset the word pointer to the beginning
-    word = startOfWord; 
+    remove_trailing_punc(word);
+
 
     for (int i = 0; diction[i] != NULL; i++) { //try again
         if ((strcmp(diction[i], word)) == 0){
             return 0;
         }
     }
+
+    //reset back to original
+    strcpy(word, original);
+
+    //case 3: initial capital
+    word[0] = toupper(word[0]);
+    for (int i = 1; word[i] != '\0'; i++) {
+        word[i] = tolower(word[i]);
+    }
+
+    for (int i = 0; diction[i] != NULL; i++) {
+        if ((strcmp(diction[i], word)) == 0) {
+            return 0; // Word with initial capital found
+        }
+    }
+
+    //reset back to original
+    strcpy(word, original);
+
+    //case 4: all capitalized
+    for (int i = 0; word[i] != '\0'; i++) {
+        word[i] = toupper(word[i]);
+    }
+
+    for (int i = 0; diction[i] != NULL; i++) {
+        if ((strcmp(diction[i], word)) == 0) {
+            return 0; // Uppercase word found
+        }
+    }
+
+    //reset back to original
+    strcpy(word, original);
+
+    //case 5: convert word to all lowercase and check again
+    for (int i = 0; word[i] != '\0'; i++) {
+        word[i] = tolower(word[i]);
+    }
+
+
+    for (int i = 0; diction[i] != NULL; i++) { //try again
+        if ((strcmp(diction[i], word)) == 0){
+            return 0;
+        }
+    }
+
+    //if not found at all, return original form of the word
+    strcpy(word, original);
+
     return 1;
 }
 

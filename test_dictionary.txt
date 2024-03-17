@@ -1,5 +1,6 @@
 bird
-swamas
-apples
+swan
+apple
 yellow
-greemlf
+green
+red

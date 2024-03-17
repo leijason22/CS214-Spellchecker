@@ -1,5 +1,4 @@
 #include "dictionary.h"
-#include "parse_spchk.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
