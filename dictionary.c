@@ -30,8 +30,16 @@ target
  /usr/share/dict/words 
 */
 
-static char **dictionary_array;
-static int num_lines;
+char **dictionary_array;
+int num_lines;
+
+char *allocate_and_copy(const char *word) {
+    char *new_word = (char *)malloc(strlen(word) + 1);  // +1 for the null terminator
+    if (new_word != NULL) {
+        strcpy(new_word, word);
+    }
+    return new_word;
+}
 
 int find_length(int fd) {
     lseek(fd, 0, SEEK_SET); // Move the file pointer to the beginning
@@ -148,7 +156,7 @@ int find_length(int fd) {
 //     free(buf);
 // }
 
-char** make_dict(int fd, int total_lines) {
+void make_dict(int fd, int total_lines) {
     // Allocate memory for dictionary_array
     dictionary_array = malloc(total_lines * sizeof(char*));
     if (dictionary_array == NULL) {
@@ -158,12 +166,10 @@ char** make_dict(int fd, int total_lines) {
 
     // Initialize variables
     int count = 0;
-    word_count = 0;
     int buflength = BUFLENGTH;
     char *buf = malloc(BUFLENGTH);
     if (buf == NULL) {
         perror("malloc failed");
-        free(dictionary_array);
         exit(1);
     }
 
@@ -186,8 +192,6 @@ char** make_dict(int fd, int total_lines) {
                 dictionary_array[count] = strdup(buf + line_start); // Store the line
                 if (dictionary_array[count] == NULL) {
                     perror("strdup failed");
-                    free(buf);
-                    free(dictionary_array);
                     exit(1);
                 }
                 count++;
@@ -210,16 +214,12 @@ char** make_dict(int fd, int total_lines) {
             buf = realloc(buf, buflength);
             if (buf == NULL) {
                 perror("realloc failed");
-                free(buf);
-                free(dictionary_array);
                 exit(1);
             }
         }
     }
-    word_count = count;
-    close(fd);
+
     free(buf);
-    return dictionary_array;
 }
 
 //binary search to check if a word is in the dictionary
