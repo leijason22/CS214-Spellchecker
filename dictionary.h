@@ -5,9 +5,11 @@
 #define MAX_WORD_LENGTH 100
 #define INITIAL_ARRAY_SIZE 104335 //max number of words in the dict
 
-char *allocate_and_copy(const char *word);
+extern char **dictionary_array;
+
 int find_length(int fd);
-char **read_dictionary(int fd, int *word_count);
+void make_dict(int fd, int total_lines);
+void traverse(char *file, char** diction);
 int binary_search(int dictionary_size, char **dictionary, char *target);
 
 

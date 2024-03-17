@@ -1,9 +1,10 @@
+#include "dictionary.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include "dictionary.h"
+#include <ctype.h>
 
 #ifndef DEBUG
 #define DEBUG 0
@@ -12,6 +13,8 @@
 #ifndef BUFLENGTH 
 #define BUFLENGTH 16
 #endif
+
+#define BUFFER_SIZE 1024
 
 /*
 this implementation of dictionary reading involves mallocing an array of size 104335 (max num of words of dictionary file in
@@ -27,8 +30,8 @@ target
  /usr/share/dict/words 
 */
 
-static char **dictionary_array;
-static int num_lines;
+char **dictionary_array;
+int num_lines;
 
 char *allocate_and_copy(const char *word) {
     char *new_word = (char *)malloc(strlen(word) + 1);  // +1 for the null terminator
@@ -158,7 +161,7 @@ void make_dict(int fd, int total_lines) {
     dictionary_array = malloc(total_lines * sizeof(char*));
     if (dictionary_array == NULL) {
         perror("malloc failed");
-        exit;
+        exit(EXIT_FAILURE);
     }
 
     // Initialize variables
@@ -240,15 +243,112 @@ int binary_search(int dictionary_size, char **dictionary, char *target) {
     return -1; //word not found
 }
 
-int main(int argc, char *argv[]){
-    int a = 0;
-    int f = open(argv[1], O_RDONLY);
-    int lines = find_length(f);
+int spelling(char word[], char **diction){
+    //printf("spelling\n");
+    //tolower(word[0]); // in case first letter is capitalized and library is all lowercaps
 
-    make_dict(f, lines);
-    for (int i = 0; dictionary_array[i] != NULL; i++) {
-        printf("%s\n", dictionary_array[i]);
-        a++; 
+    char *startOfWord = word; 
+
+    for (int i = 0; diction[i] != NULL; i++) {
+        if ((strcmp(diction[i], word)) == 0){
+            return 0;
+        }
     }
-    printf("%d \n", a);
+
+    for (int i = 0; word[i] != '\0'; i++) {
+        word[i] = tolower(word[i]);
+    }
+
+    // Reset the word pointer to the beginning
+    word = startOfWord; 
+
+    for (int i = 0; diction[i] != NULL; i++) { //try again
+        if ((strcmp(diction[i], word)) == 0){
+            return 0;
+        }
+    }
+    return 1;
+}
+
+
+void traverse(char *file, char** diction){
+    int row = 1;
+    int col = 1;
+    int word_col = 0; 
+
+    char buffer[BUFFER_SIZE];
+    ssize_t bytes_read;
+
+    int fd = open(file, O_RDONLY);
+    if (fd == -1) {
+        perror("open");
+        exit(EXIT_FAILURE);
+    }
+
+    char temp[45];
+    int start = 0;
+    int last_letter = 0;
+    int bytes_eaten = 0;
+    while ((bytes_read = read(fd, buffer, BUFFER_SIZE)) > 0) {
+        for (int i = 0; i < bytes_read; i++) {
+            bytes_eaten++; 
+            if (isalpha(buffer[i])) { //if it is alphabet
+                temp[start] = buffer[i];
+                start++;
+                last_letter = 1;
+                if(word_col == 0) word_col = col; 
+                //printf("word started");
+            }else{ 
+                //printf("else");
+                if(last_letter == 1){
+                    //printf("if");
+                    temp[start] = '\0';
+                    int one_if_wrong = spelling(temp, diction);
+                    if(one_if_wrong == 1){
+                        printf(" %s (%d,%d): %s \n", file, row, word_col, temp);
+                    }
+                    //printf("%s \n", temp);
+                    for (int i = 0; i < sizeof(temp); i++) { //clear out array to use again for next word
+                        
+                        temp[i] = 0;
+                    }
+                    start = 0; 
+                    word_col = 0;
+                    last_letter = 0;
+                }
+            }
+
+            col++; 
+
+            if(buffer[i] == '\n'){ // newline count
+                row++; 
+                col = 1; 
+                int segment_length = bytes_read - bytes_eaten;
+                memmove(buffer, buffer + start, segment_length);
+            }
+        }
+    }
+
+    if(last_letter == 1){ // last word case, bcuz doesn't run since never hits if condition in loop
+        temp[start] = '\0';
+        int one_if_wrong = spelling(temp, diction);
+        if(one_if_wrong == 1){
+            printf(" %s (%d,%d): %s \n", file, row, word_col, temp);
+                }
+        for (int i = 0; i < sizeof(temp); i++) { //clear out array to use again for next word
+            
+            temp[i] = 0;
+        }
+        start = 0; 
+        word_col = 0;
+        last_letter = 0;
+    }
+
+    if (bytes_read == -1) {
+        perror("read");
+        exit(EXIT_FAILURE);
+    }
+
+    close(fd);
+    return;
 }
