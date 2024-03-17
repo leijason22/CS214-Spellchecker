@@ -52,9 +52,7 @@ void dirTraversal(const char *path) {
             }
         }
     }
-
     closedir(dir);
-
 }
 
 
@@ -97,21 +95,30 @@ int main(int argc, char *argv[]) {
     traverse(argv[2], dictionary_array);
 
     //decides if argv[x] is a file or directory
-    struct stat path_stat;
     for (int i = 2; i < argc; i++) {
+        struct stat path_stat;
         if (stat(argv[i], &path_stat) == -1) {
-            perror("stat failed");
+            perror("failed");
             continue;
         }
 
-        if (S_ISREG(path_stat.st_mode)) {
-            printf("regular file: %s\n", argv[i]); //regular file found
-        } else if (S_ISDIR(path_stat.st_mode)) {
-            printf("directory: %s\n", argv[i]); //directory found
+        if (S_ISDIR(path_stat.st_mode)) {
+            printf("Directory found: %s\n", argv[i]);
             dirTraversal(argv[i]);
+        } else if (S_ISREG(path_stat.st_mode)) {
+            printf("Regular file found: %s\n", argv[i]);
         } else {
-            fprintf(stderr, "%s is not a regular file or directory\n", argv[i]);
+            fprintf(stderr, "%s is neither a regular file nor a directory\n", argv[i]);
         }
+
+        // if (S_ISREG(path_stat.st_mode)) {
+        //     printf("regular file found: %s\n", argv[i]); //regular file found
+        // } else if (S_ISDIR(path_stat.st_mode)) {
+        //     printf("directory found: %s\n", argv[i]); //directory found
+        //     dirTraversal(argv[i]);
+        // } else {
+        //     fprintf(stderr, "%s is not a regular file or directory\n", argv[i]);
+        // }
     }
 
     for (int i = 0; i < lines; i++) {
