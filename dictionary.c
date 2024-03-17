@@ -235,13 +235,13 @@ int binary_search(int dictionary_size, char **dictionary, char *target) {
     return -1; //word not found
 }
 
-void remove_trailing_punc(char *word) {
-    int len = strlen(word);
-    while (len > 0 && ispunct(word[len - 1])) {
-        word[len - 1] = '\0';
-        len--;
-    }
-}
+// void remove_trailing_punc(char *word) {
+//     int len = strlen(word);
+//     while (len > 0 && ispunct(word[len - 1])) {
+//         word[len - 1] = '\0';
+//         len--;
+//     }
+// }
 
 int spelling(char word[], char **diction){
     //printf("spelling\n");
@@ -256,21 +256,21 @@ int spelling(char word[], char **diction){
         }
     }
 
-    //case 2: remove trailing punctuation
+    //case 2: remove trailing punctuation WAIT traverse already ignores all punctuation
     char original[MAX_WORD_LENGTH];
     strcpy(original, word);
 
-    remove_trailing_punc(word);
+    // remove_trailing_punc(word);
 
 
-    for (int i = 0; diction[i] != NULL; i++) { //try again
-        if ((strcmp(diction[i], word)) == 0){
-            return 0;
-        }
-    }
+    // for (int i = 0; diction[i] != NULL; i++) { //try again
+    //     if ((strcmp(diction[i], word)) == 0){
+    //         return 0;
+    //     }
+    // }
 
     //reset back to original
-    strcpy(word, original);
+    // strcpy(word, original);
 
     //case 3: initial capital
     word[0] = toupper(word[0]);
@@ -312,6 +312,17 @@ int spelling(char word[], char **diction){
             return 0;
         }
     }
+
+    //case 6: hyphenated words
+    // char *hyphenated = strtok(word, "-"); // Split the hyphenated word into tokens
+    // while (hyphenated) {
+    //     // Check each component word against the dictionary
+    //     if (spelling(hyphenated, diction) != 0) {
+    //         // If any component word is misspelled, return 1
+    //         return 0;
+    //     }
+    //     hyphenated = strtok(NULL, "-"); // Get the next token
+    // }
 
     //if not found at all, return original form of the word
     strcpy(word, original);
