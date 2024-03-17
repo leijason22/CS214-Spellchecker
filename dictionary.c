@@ -27,16 +27,17 @@ target
  /usr/share/dict/words 
 */
 
-static char **dictionary_array;
-static int num_lines;
+char **dictionary_array;
+int num_lines;
+int word_count;
 
-char *allocate_and_copy(const char *word) {
-    char *new_word = (char *)malloc(strlen(word) + 1);  // +1 for the null terminator
-    if (new_word != NULL) {
-        strcpy(new_word, word);
-    }
-    return new_word;
-}
+// char *allocate_and_copy(const char *word) {
+//     char *new_word = (char *)malloc(strlen(word) + 1);  // +1 for the null terminator
+//     if (new_word != NULL) {
+//         strcpy(new_word, word);
+//     }
+//     return new_word;
+// }
 
 int find_length(int fd) {
     lseek(fd, 0, SEEK_SET); // Move the file pointer to the beginning
@@ -153,7 +154,7 @@ int find_length(int fd) {
 //     free(buf);
 // }
 
-void make_dict(int fd, int total_lines) {
+char** make_dict(int fd, int total_lines) {
     // Allocate memory for dictionary_array
     dictionary_array = malloc(total_lines * sizeof(char*));
     if (dictionary_array == NULL) {
@@ -163,10 +164,12 @@ void make_dict(int fd, int total_lines) {
 
     // Initialize variables
     int count = 0;
+    word_count = 0;
     int buflength = BUFLENGTH;
     char *buf = malloc(BUFLENGTH);
     if (buf == NULL) {
         perror("malloc failed");
+        free(dictionary_array);
         exit(1);
     }
 
@@ -189,6 +192,8 @@ void make_dict(int fd, int total_lines) {
                 dictionary_array[count] = strdup(buf + line_start); // Store the line
                 if (dictionary_array[count] == NULL) {
                     perror("strdup failed");
+                    free(buf);
+                    free(dictionary_array);
                     exit(1);
                 }
                 count++;
@@ -211,12 +216,16 @@ void make_dict(int fd, int total_lines) {
             buf = realloc(buf, buflength);
             if (buf == NULL) {
                 perror("realloc failed");
+                free(buf);
+                free(dictionary_array);
                 exit(1);
             }
         }
     }
+    word_count = count;
     close(fd);
     free(buf);
+    return dictionary_array;
 }
 
 //binary search to check if a word is in the dictionary
@@ -240,15 +249,16 @@ int binary_search(int dictionary_size, char **dictionary, char *target) {
     return -1; //word not found
 }
 
-int main(int argc, char *argv[]){
-    int a = 0;
-    int f = open(argv[1], O_RDONLY);
-    int lines = find_length(f);
+// int main(int argc, char *argv[]){
+//     int a = 0;
+//     int f = open(argv[1], O_RDONLY);
+//     int lines = find_length(f);
 
-    make_dict(f, lines);
-    for (int i = 0; dictionary_array[i] != NULL; i++) {
-        printf("%s\n", dictionary_array[i]);
-        a++; 
-    }
-    printf("%d \n", a);
-}
+//     make_dict(f, lines);
+//     for (int i = 0; dictionary_array[i] != NULL; i++) {
+//         printf("%s\n", dictionary_array[i]);
+//         a++; 
+//     }
+//     printf("Word Count: %d\n", word_count); 
+//     printf("%d \n", a);
+// }
