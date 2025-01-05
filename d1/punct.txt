@@ -1,0 +1,4 @@
+Spam, eggs, bacon, Spam. ?Foo?
+Spam: eggs!bacon.
+Spam,Spam,Spam!
+)foo
